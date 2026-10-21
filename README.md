@@ -3,8 +3,8 @@
 这是一个基于 LangChain 1.0 + LangGraph 构建的多智能体医疗问诊助手。通过自然语言交互，实现导诊、症状咨询、用药建议等功能。
 
 ## 🔗 在线体验 (Live Demo)
-- **前端交互页面**：[点击这里体验](https://你的前端网址.onrender.com)
-- **后端 API 文档**：[点击这里查看](https://你的后端网址.onrender.com/docs)
+- **前端交互页面**：[点击这里体验](https://smart-medical-agent-web.onrender.com)
+- **后端 API 文档**：[点击这里查看](https://smart-medical-agent-wxoz.onrender.com/docs)
 
 *(注：因部署在 Render 免费版，首次唤醒可能需要等待 30 秒左右)*
 
