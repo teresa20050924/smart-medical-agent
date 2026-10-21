@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能问诊 AI 客服</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; display: flex; justify-content: center; height: 100vh; }
+        #app { width: 100%; max-width: 600px; height: 100vh; background: #fff; display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        .header { background: #2c7a7b; color: white; padding: 15px 20px; font-size: 18px; font-weight: bold; text-align: center; }
+        .chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: #e6f2f2; }
+        .message { max-width: 80%; padding: 10px 15px; border-radius: 10px; line-height: 1.5; font-size: 14px; white-space: pre-wrap; }
+        .user-msg { align-self: flex-end; background: #2c7a7b; color: white; border-bottom-right-radius: 2px; }
+        .ai-msg { align-self: flex-start; background: white; color: #333; border-bottom-left-radius: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .input-area { display: flex; padding: 15px; background: white; border-top: 1px solid #eee; }
+        .input-area input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 20px; outline: none; font-size: 14px; }
+        .input-area button { margin-left: 10px; padding: 0 20px; background: #2c7a7b; color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .input-area button:hover { background: #235e5f; }
+        .input-area button:disabled { background: #ccc; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">🏥 智能问诊 AI 客服</div>
+        <div class="chat-box" ref="chatBox">
+            <div v-for="(msg, index) in messages" :key="index" :class="['message', msg.role === 'user' ? 'user-msg' : 'ai-msg']">
+                {{ msg.content }}
+            </div>
+            <div v-if="loading" class="message ai-msg">AI 正在思考中...</div>
+        </div>
+        <div class="input-area">
+            <input v-model="inputText" @keyup.enter="sendMessage" placeholder="请输入您的症状或问题..." :disabled="loading" />
+            <button @click="sendMessage" :disabled="loading || !inputText.trim()">发送</button>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, nextTick } = Vue;
+
+        createApp({
+            setup() {
+                const messages = ref([
+                    { role: 'ai', content: '您好！我是您的私人医疗顾问。请问有什么可以帮您？' }
+                ]);
+                const inputText = ref('');
+                const loading = ref(false);
+                const chatBox = ref(null);
+                
+                // 随机生成一个 user_id 和 thread_id（保持会话）
+                const userId = "user_" + Math.floor(Math.random() * 10000);
+                const threadId = "thread_" + Date.now();
+
+                const scrollToBottom = () => {
+                    nextTick(() => {
+                        if (chatBox.value) {
+                            chatBox.value.scrollTop = chatBox.value.scrollHeight;
+                        }
+                    });
+                };
+
+                const sendMessage = async () => {
+                    if (!inputText.value.trim() || loading.value) return;
+                    
+                    const userMsg = inputText.value;
+                    messages.value.push({ role: 'user', content: userMsg });
+                    inputText.value = '';
+                    loading.value = true;
+                    scrollToBottom();
+
+                    try {
+                        const response = await fetch('http://127.0.0.1:8000/api/chat', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                message: userMsg,
+                                user_id: userId,
+                                thread_id: threadId
+                            })
+                        });
+                        
+                        const data = await response.json();
+                        if (data.success) {
+                            messages.value.push({ role: 'ai', content: data.reply });
+                        } else {
+                            messages.value.push({ role: 'ai', content: '抱歉，服务器开小差了。' });
+                        }
+                    } catch (error) {
+                        messages.value.push({ role: 'ai', content: '网络连接失败，请检查后端是否启动。' });
+                    } finally {
+                        loading.value = false;
+                        scrollToBottom();
+                    }
+                };
+
+                return { messages, inputText, loading, sendMessage, chatBox };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
